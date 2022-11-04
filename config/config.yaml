@@ -1,0 +1,10 @@
+%YAML 1.2
+---
+
+aws:
+        profile:  "hk-aws-toolkit"
+        cctv_bucket:  "pvl-video-surveillance"
+        cctv_region:  "eu-central-1"
+archive:
+        keep_files_days:  365
+        purge_permanently:  True
