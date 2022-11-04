@@ -33,8 +33,7 @@ def get_all_cameras(args, cfg):
 
 def a_list_cameras(args, cfg):
 
-    if not args.machine:
-        logging.info("Cameras in bucket [" + cfg['aws']['cctv_bucket'] + "]")
+    logging.info("Cameras in bucket [" + cfg['aws']['cctv_bucket'] + "]")
 
     for cam in get_all_cameras(args, cfg):
         print(str(cam))

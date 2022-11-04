@@ -10,6 +10,8 @@ setup_requirements = [ ]
 
 test_requirements = [ ]
 
+exec_scripts=['scripts/hk-aws-tool.py']
+
 setup(
     author="Roman Pavlyuk",
     author_email='roman.pavlyuk@gmail.com',
@@ -33,4 +35,5 @@ setup(
     url='https://github.com/rpavlyuk/hikvision-aws-toolkit',
     version='1.0',
     zip_safe=False,
+    scripts=exec_scripts
 )
