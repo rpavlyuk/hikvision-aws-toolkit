@@ -29,7 +29,7 @@ def get_all_cameras(args, cfg):
     # aws client
     s3_client = util.get_aws_client(cfg)
 
-    cameras_list = util.list_s3_directory(s3_client, cfg['aws']['cctv_bucket'])
+    cameras_list = util.list_s3_subfolders(s3_client, cfg['aws']['cctv_bucket'])
 
     return cameras_list
 
