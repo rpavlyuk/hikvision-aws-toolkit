@@ -16,7 +16,9 @@ def action(args, cfg):
     elif args.action == 'list-camera-dirs':
         a_list_camera_directory(args, cfg, args.camera)
     elif args.action == 'list-camera-files':
-        a_list_camera_files(args, cfg, args.camera)
+        a_list_camera_files(args, cfg, args.camera, args.pattern)
+    elif args.action == 'list-camera-files-on-date':
+        a_list_camera_files_on_date(args, cfg, args.camera, args.date, args.pattern)  
     else:
         logging.warn("Unknown action provided: " + args.action)
     
@@ -51,7 +53,8 @@ def a_list_camera_directory(args, cfg, camera):
 
     logging.info("Directories for camera [" + camera + "]")
 
-    arch_directories = util.list_s3_directory(s3_client, cfg['aws']['cctv_bucket'], pfx=camera)
+    # arch_directories = util.list_s3_directory(s3_client, cfg['aws']['cctv_bucket'], pfx=camera)
+    arch_directories = util.list_s3_subfolders(s3_client, cfg['aws']['cctv_bucket'], pfx=camera)
 
     
     logging.info("Found total " + str(len(arch_directories)) + " objects for camera " + camera)
@@ -61,18 +64,37 @@ def a_list_camera_directory(args, cfg, camera):
     
     return
 
-def a_list_camera_files(args, cfg, camera):
+def a_list_camera_files(args, cfg, camera, pattern="*"):
 
     if args.camera == None:
         logging.critical("Camera option is needed for this action")
         return
 
     # aws client
-    s3_resource = util.get_aws_resource(cfg)
+    s3_client = util.get_aws_client(cfg)
     
-    logging.info("Directories for camera [" + camera + "]")
+    logging.info("Files for camera [" + camera + "]")
 
-    arch_files = util.list_s3_directory_files(s3_resource, cfg['aws']['cctv_bucket'], pfx=camera)
+    arch_files = util.list_s3_files_filtered(s3_client, cfg['aws']['cctv_bucket'], pfx=camera, pattern=pattern)
+
+    logging.info("Found total " + str(len(arch_files)) + " objects for camera " + camera)
+
+    for file in arch_files:
+        print(str(file))  
+
+    return 
+
+def a_list_camera_files_on_date(args, cfg, camera, date, pattern="*"):
+    if args.camera == None or args.date == None:
+        logging.critical("Camera and/or date options is needed for this action")
+        return  
+    
+    # aws client
+    s3_client = util.get_aws_client(cfg)
+
+    logging.info("Files for camera [" + camera + "] on date " + str(date))
+
+    arch_files = util.list_s3_files_filtered(s3_client, cfg['aws']['cctv_bucket'], pfx=str(camera)+"/"+str(date), pattern=pattern)
 
     logging.info("Found total " + str(len(arch_files)) + " objects for camera " + camera)
 

@@ -43,7 +43,7 @@ if __name__ == '__main__':
                       "-a",
                       "--action",
                       help = "Action the script has to perform",
-                      choices=['upload', 'cleanup', 'list', 'list-cameras', 'list-camera-dirs', 'list-camera-files'],
+                      choices=['upload', 'cleanup', 'list', 'list-cameras', 'list-camera-dirs', 'list-camera-files', 'list-camera-files-on-date' ],
                       required=True)
   parser.add_argument(
                       "-v",
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                       "--config",
                       help = "Path to main configuration file (e.g., config.yaml)",
                       required=False,
-                      default='/etc/hikvision/aws/config.yaml')
+                      default='/etc/hkawstoolkit/config.yaml')
   parser.add_argument(
                       "-q",
                       "--quiet",
@@ -73,7 +73,19 @@ if __name__ == '__main__':
                       "--camera",
                       help="Camera to proceed with (required for certain actions)",
                       required=False,
-                      default=None)                    
+                      default=None)
+  parser.add_argument(
+                      "-d",
+                      "--date",
+                      help="Date of the event (required for certain actions). Format: YYYY-MM-DD",
+                      required=False,
+                      default=None)   
+  parser.add_argument(
+                      "-p",
+                      "--pattern",
+                      help="Filter files. Format example: *.jpg",
+                      required=False,
+                      default="*")                   
 
   args = parser.parse_args()
   
@@ -82,7 +94,7 @@ if __name__ == '__main__':
     loglevel = logging.DEBUG
   else:
     loglevel = logging.INFO
-    
+
   # "quiet" has higher priority over "verbose"
   if args.quiet:
     loglevel = logging.ERROR

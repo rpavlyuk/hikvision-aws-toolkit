@@ -10,6 +10,8 @@ except ImportError:
 
 import boto3
 
+import fnmatch
+
 # Read configuration
 def parse_config(args, config_file='/etc/hikvision/aws/config.yaml'):
     
@@ -42,43 +44,40 @@ def get_aws_resource(cfg):
 
     return s3_resource   
 
-
-# get list of objects in "directory"
-def list_s3_directory(s3_client, bucket, pfx=""):
+def list_s3_objects(s3_client, bucket, pfx="", delimiter="/"):
 
     # ensure prefix has trailing slash
     if pfx != "":
         pfx.strip('/')
         pfx = pfx + "/"
 
-    # new emptry files list
-    files = []
+    rsp = s3_client.list_objects_v2(Bucket=bucket, Prefix=pfx, Delimiter=delimiter)
 
-    # get the directories/files in the "directory"
-    paginator = s3_client.get_paginator('list_objects')
-    result = paginator.paginate(Bucket=bucket, Delimiter='/', Prefix=pfx)
-    for prefix in result.search('CommonPrefixes'):
-        if not prefix:
-            logging.debug("Got NULL prefix the getting directory list in list_s3_directory")
-            break
-        _filename = str(prefix.get('Prefix'))
-        files.append(_filename.strip('/'))
+    return rsp
 
-    return files
+def list_s3_subfolders(s3_client, bucket, pfx="", delimiter="/"):
 
-def list_s3_directory_files(s3_resource, bucket, pfx=""):
+    rsp = list_s3_objects(s3_client, bucket, pfx, delimiter)
+    if not rsp.__contains__("Contents"):
+        return []
+    return list(obj["Prefix"] for obj in rsp["CommonPrefixes"])
 
-    # ensure prefix has trailing slash
-    if pfx != "":
-        pfx.strip('/')
-        pfx = pfx + "/"
+def list_s3_files(s3_client, bucket, pfx="", delimiter="/"):
 
-    # new emptry files list
-    files = [] 
-    
-    cctv_bucket = s3_resource.Bucket(bucket)
+    rsp = list_s3_objects(s3_client, bucket, pfx, delimiter)
+    if not rsp.__contains__("Contents"):
+        return []
+    return list(obj["Key"] for obj in rsp["Contents"])
 
-    for object_summary in cctv_bucket.objects.filter(Prefix=pfx):
-        files.append(object_summary.key)
+def list_s3_folder(s3_client, bucket, pfx=""):
 
-    return files
+    rsp = list_s3_objects(s3_client, bucket, pfx)
+    if not rsp.__contains__("Contents"):
+        return []
+    return list(obj["Key"] for obj in rsp["Contents"])
+
+def list_s3_files_filtered(s3_client, bucket, pfx="", delimiter="/", pattern="*"):
+
+    files = list_s3_files(s3_client, bucket, pfx, delimiter)
+
+    return fnmatch.filter(files, pattern)
