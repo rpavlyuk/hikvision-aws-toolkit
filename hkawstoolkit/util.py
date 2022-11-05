@@ -55,29 +55,36 @@ def list_s3_objects(s3_client, bucket, pfx="", delimiter="/"):
 
     return rsp
 
+# cleanup and process the result of S3 objects search and listing
+def process_s3_listing(rsp, as_folders=False):
+    if not rsp.__contains__("Contents"):
+        return []
+    if as_folders:
+        fs_objects = list(obj["Prefix"] for obj in rsp["CommonPrefixes"])
+    else:
+        fs_objects = list(obj["Key"] for obj in rsp["Contents"])
+    ret_objects = []
+    for fs_object in fs_objects:
+        ret_objects.append(fs_object.strip("/"))
+    return ret_objects
+
+
 def list_s3_subfolders(s3_client, bucket, pfx="", delimiter="/"):
 
     rsp = list_s3_objects(s3_client, bucket, pfx, delimiter)
-    if not rsp.__contains__("Contents"):
-        return []
-    return list(obj["Prefix"] for obj in rsp["CommonPrefixes"])
+    return process_s3_listing(rsp, as_folders=True)
 
 def list_s3_files(s3_client, bucket, pfx="", delimiter="/"):
 
     rsp = list_s3_objects(s3_client, bucket, pfx, delimiter)
-    if not rsp.__contains__("Contents"):
-        return []
-    return list(obj["Key"] for obj in rsp["Contents"])
+    return process_s3_listing(rsp, as_folders=False)
 
 def list_s3_folder(s3_client, bucket, pfx=""):
 
     rsp = list_s3_objects(s3_client, bucket, pfx)
-    if not rsp.__contains__("Contents"):
-        return []
-    return list(obj["Key"] for obj in rsp["Contents"])
+    return process_s3_listing(rsp, as_folders=False)
 
 def list_s3_files_filtered(s3_client, bucket, pfx="", delimiter="/", pattern="*"):
 
     files = list_s3_files(s3_client, bucket, pfx, delimiter)
-
     return fnmatch.filter(files, pattern)
