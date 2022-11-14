@@ -18,7 +18,11 @@ def action(args, cfg):
     elif args.action == 'list-camera-files':
         a_list_camera_files(args, cfg, args.camera, args.pattern)
     elif args.action == 'list-camera-files-on-date':
-        a_list_camera_files_on_date(args, cfg, args.camera, args.date, args.pattern)  
+        a_list_camera_files_on_date(args, cfg, args.camera, args.date, args.pattern)
+    elif args.action == 'store-camera-files':
+        a_store_camera_files(args, cfg, args.camera, args.pattern)
+    elif args.action == 'store-all-files':
+        a_store_all_files(args, cfg, args.pattern)
     else:
         logging.warn("Unknown action provided: " + args.action)
     
@@ -102,7 +106,41 @@ def a_list_camera_files_on_date(args, cfg, camera, date, pattern="*"):
         print(str(file))  
 
     return 
-    
+
+def a_store_camera_files(args, cfg, camera, pattern="*"):
+
+    if camera == None:
+        logging.critical("Camera option is needed for this action")
+        return
+
+    logging.info("Storing files (" + str(pattern) + ") for camera " + str(camera))
+    # aws client
+    s3_client = util.get_aws_client(cfg)
+    s3_resource = util.get_aws_resource(cfg)
+    cam_files = util.list_s3_files_filtered(s3_client, cfg['aws']['cctv_bucket'], pfx=camera, pattern=pattern)
+    logging.info("Found " + str(len(cam_files)) + " non-stored objects for camera " + camera)
+
+    for file in cam_files:
+        logging.info("Processing file \"" + str(file) + "\"")
+        if not util.file_s3_exists(s3_resource, cfg['aws']['cctv_bucket'], file):
+            logging.info("Object \"" + str(file) + "\" doesn't exists or is not a file. Skipping now.")
+            continue
+        m_folder = util.get_s3_modification_date_folder(s3_resource, cfg['aws']['cctv_bucket'], file)
+        obj = util.move_s3_file_to_folder(s3_resource, cfg['aws']['cctv_bucket'], file, str(camera) + "/" + m_folder)
+        logging.info("File stored as \"" + obj.key + "\"")
+
+    return
+
+def a_store_all_files(args, cfg, pattern="*"):
+
+    logging.info("Processing files (" + str(pattern) +") for all cameras in bucket [" + cfg['aws']['cctv_bucket'] + "]")
+
+    for cam in get_all_cameras(args, cfg):
+        a_store_camera_files(args, cfg, cam, pattern)
+
+    return
+
+
 
 def cleanup_all(args, cfg):
     # get all cameras
