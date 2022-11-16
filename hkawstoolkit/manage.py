@@ -30,6 +30,8 @@ def action(args, cfg):
         a_archive_camera_date_folder(args, cfg, args.camera, args.date)
     elif args.action == 'archive-camera-folder-pattern':
         a_archive_camera_pattern_folder(args, cfg, args.camera, args.pattern)
+    elif args.action == 'archive-all-by-pattern':
+        a_archive_pattern_folders_all_cameras(args, cfg, args.pattern)
     else:
         logging.warn("Unknown action provided: " + args.action)
     
@@ -199,7 +201,7 @@ def a_archive_camera_date_folder(args, cfg, camera, date):
 
     return
 
-def a_archive_camera_pattern_folder(args, cfg, camera, pattern):
+def a_archive_camera_pattern_folder(args, cfg, camera, pattern="*"):
 
     if camera == None:
         logging.critical("Camera option is needed for this action")
@@ -215,17 +217,30 @@ def a_archive_camera_pattern_folder(args, cfg, camera, pattern):
     logging.info("Found total " + str(len(arch_directories)) + " objects for camera \"" + camera + "\" matching pattern (" + pattern + ")")
 
     # protect against archive batches being too big
-    if len(arch_directories) > cfg['archive']['batch_folder_limit']:
+    return acrhive_camera_folder_list(args, cfg, camera, arch_directories)
+
+def a_archive_pattern_folders_all_cameras(args, cfg, pattern="*"):
+
+    logging.info("Applying pattern (" + str(pattern) +") for all cameras in bucket [" + cfg['aws']['cctv_bucket'] + "] to archive date folders. This may take a while.")
+
+    for camera in get_all_cameras(args, cfg):
+        a_archive_camera_pattern_folder(args, cfg, camera, pattern)
+    return
+
+
+def acrhive_camera_folder_list(args, cfg, camera, folders = []):
+
+    # protect against archive batches being too big
+    if len(folders) > cfg['archive']['batch_folder_limit']:
         logging.error("Number of folders found is bigger than limit (" + str(cfg['archive']['batch_folder_limit']) + "). Please, correct the search pattern and try again.")
         return
 
-    for date_folder in arch_directories:
+    for date_folder in folders:
         arch_date = os.path.basename(date_folder)
         logging.info("Archiving folder \"" + arch_date + "\" for camera \"" + camera + "\"")
         a_archive_camera_date_folder(args, cfg, camera, arch_date)
 
     return
-
 
 def cleanup_all(args, cfg):
     # get all cameras

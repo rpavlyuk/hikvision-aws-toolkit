@@ -65,7 +65,10 @@ def process_s3_listing(rsp, as_folders=False):
     if not rsp.__contains__("Contents"):
         return []
     if as_folders:
-        fs_objects = list(obj["Prefix"] for obj in rsp["CommonPrefixes"])
+        if rsp.__contains__("CommonPrefixes"):
+            fs_objects = list(obj["Prefix"] for obj in rsp["CommonPrefixes"])
+        else:
+            fs_objects = []
     else:
         fs_objects = list(obj["Key"] for obj in rsp["Contents"])
     ret_objects = []
