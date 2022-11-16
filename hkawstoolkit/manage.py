@@ -153,9 +153,10 @@ def a_archive_camera_date_folder(args, cfg, camera, date):
         return 
 
     s3_client = util.get_aws_client(cfg)
+    s3_resource = util.get_aws_resource(cfg)
     prefix_path = camera + "/" + date
-    if not util.folder_s3_exists(s3_client, cfg['aws']['cctv_bucket'], prefix_path):
-        logging.error("Target folder to archive \"" + prefix_path + "\" doesn't exist.")
+    if not util.folder_s3_exists_and_not_empty(s3_client, cfg['aws']['cctv_bucket'], prefix_path):
+        logging.error("Target folder to archive \"" + prefix_path + "\" doesn't exist or is empty.")
         return
 
     arch_file = camera + "/archive/" + date + "." + cfg['archive']['extension']
@@ -166,7 +167,7 @@ def a_archive_camera_date_folder(args, cfg, camera, date):
         # target_bucket=None,  # Default: source bucket. Can be used to save the archive into a different bucket
         # min_file_size='50MB',  # Default: None. The min size to make each tar file [B,KB,MB,GB,TB]. If set, a number will be added to each file name
         # save_metadata=False,  # If True, and the file has metadata, save a file with the same name using the suffix of `.metadata.json`
-        # remove_keys=False,  # If True, will delete s3 files after the tar is created
+        remove_keys=True,  # If True, will delete s3 files after the tar is created
     
         # ADVANCED USAGE
         allow_dups=True,  # When False, will raise ValueError if a file will overwrite another in the tar file, set to True to ignore
@@ -193,6 +194,8 @@ def a_archive_camera_date_folder(args, cfg, camera, date):
     if cfg['archive']['glacier']:
         util.set_s3_object_storage_class(s3_client, cfg['aws']['cctv_bucket'], arch_file, 'GLACIER')
 
+    # Remove folder
+    util.delete_s3_file(s3_resource, cfg['aws']['cctv_bucket'], prefix_path + "/")
 
     return
 
