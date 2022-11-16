@@ -8,3 +8,6 @@ aws:
 archive:
         keep_files_days:  365
         purge_permanently:  True
+        extension: tar.gz
+        batch_folder_limit: 31
+        glacier: True

@@ -2,6 +2,9 @@
 from multiprocessing.spawn import import_main_path
 from hkawstoolkit import util
 import logging
+import os
+
+from s3_tar import S3Tar
 
 import pprint
 
@@ -23,6 +26,10 @@ def action(args, cfg):
         a_store_camera_files(args, cfg, args.camera, args.pattern)
     elif args.action == 'store-all-files':
         a_store_all_files(args, cfg, args.pattern)
+    elif args.action == 'archive-camera-folder-on-date':
+        a_archive_camera_date_folder(args, cfg, args.camera, args.date)
+    elif args.action == 'archive-camera-folder-pattern':
+        a_archive_camera_pattern_folder(args, cfg, args.camera, args.pattern)
     else:
         logging.warn("Unknown action provided: " + args.action)
     
@@ -48,7 +55,7 @@ def a_list_cameras(args, cfg):
 
 def a_list_camera_directory(args, cfg, camera):
 
-    if args.camera == None:
+    if camera == None:
         logging.critical("Camera option is needed for this action")
         return
 
@@ -70,7 +77,7 @@ def a_list_camera_directory(args, cfg, camera):
 
 def a_list_camera_files(args, cfg, camera, pattern="*"):
 
-    if args.camera == None:
+    if camera == None:
         logging.critical("Camera option is needed for this action")
         return
 
@@ -89,7 +96,7 @@ def a_list_camera_files(args, cfg, camera, pattern="*"):
     return 
 
 def a_list_camera_files_on_date(args, cfg, camera, date, pattern="*"):
-    if args.camera == None or args.date == None:
+    if camera == None or date == None:
         logging.critical("Camera and/or date options is needed for this action")
         return  
     
@@ -140,6 +147,81 @@ def a_store_all_files(args, cfg, pattern="*"):
 
     return
 
+def a_archive_camera_date_folder(args, cfg, camera, date):
+    if camera == None or date == None:
+        logging.critical("Camera and/or date options is needed for this action")
+        return 
+
+    s3_client = util.get_aws_client(cfg)
+    prefix_path = camera + "/" + date
+    if not util.folder_s3_exists(s3_client, cfg['aws']['cctv_bucket'], prefix_path):
+        logging.error("Target folder to archive \"" + prefix_path + "\" doesn't exist.")
+        return
+
+    arch_file = camera + "/archive/" + date + "." + cfg['archive']['extension']
+
+    job = S3Tar(
+        cfg['aws']['cctv_bucket'],
+        arch_file,  # Use `tar.gz` or `tar.bz2` to enable compression
+        # target_bucket=None,  # Default: source bucket. Can be used to save the archive into a different bucket
+        # min_file_size='50MB',  # Default: None. The min size to make each tar file [B,KB,MB,GB,TB]. If set, a number will be added to each file name
+        # save_metadata=False,  # If True, and the file has metadata, save a file with the same name using the suffix of `.metadata.json`
+        # remove_keys=False,  # If True, will delete s3 files after the tar is created
+    
+        # ADVANCED USAGE
+        allow_dups=True,  # When False, will raise ValueError if a file will overwrite another in the tar file, set to True to ignore
+        # cache_size=5,  # Default 5. Number of files to hold in memory to be processed
+        # s3_max_retries=4,  # Default is 4. This value is passed into boto3.client's s3 botocore config as the `max_attempts`
+        # part_size_multiplier=10,  # is multiplied by 5 MB to find how large each part that gets upload should be
+        session=util.get_aws_session(cfg),  # For custom aws session
+    )
+    
+    job.add_files(
+        prefix_path + "/",
+        folder=prefix_path,  # If a folder is set, then all files from this directory will be added into that folder in the tar file
+        # preserve_paths=False,  # If True, it will use the dir paths relative to the input path inside the tar file
+    )
+
+    # Start the tar'ing job after files have been added
+    job.tar()
+
+    # Set archive tags
+    logging.info("Tagging file \"" + arch_file + "\" as archive")
+    util.set_s3_archive_tag(s3_client, cfg['aws']['cctv_bucket'], arch_file)
+
+    # Move to Glacier
+    if cfg['archive']['glacier']:
+        util.set_s3_object_storage_class(s3_client, cfg['aws']['cctv_bucket'], arch_file, 'GLACIER')
+
+
+    return
+
+def a_archive_camera_pattern_folder(args, cfg, camera, pattern):
+
+    if camera == None:
+        logging.critical("Camera option is needed for this action")
+        return
+
+    # aws client
+    s3_client = util.get_aws_client(cfg)
+
+    logging.info("Directories for camera [" + camera + "] to be archived")
+
+    arch_directories = util.list_s3_subfolders_filtered(s3_client, cfg['aws']['cctv_bucket'], pfx=camera, pattern=pattern)
+    
+    logging.info("Found total " + str(len(arch_directories)) + " objects for camera \"" + camera + "\" matching pattern (" + pattern + ")")
+
+    # protect against archive batches being too big
+    if len(arch_directories) > cfg['archive']['batch_folder_limit']:
+        logging.error("Number of folders found is bigger than limit (" + str(cfg['archive']['batch_folder_limit']) + "). Please, correct the search pattern and try again.")
+        return
+
+    for date_folder in arch_directories:
+        arch_date = os.path.basename(date_folder)
+        logging.info("Archiving folder \"" + arch_date + "\" for camera \"" + camera + "\"")
+        a_archive_camera_date_folder(args, cfg, camera, arch_date)
+
+    return
 
 
 def cleanup_all(args, cfg):

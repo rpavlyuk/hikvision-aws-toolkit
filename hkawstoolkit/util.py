@@ -28,6 +28,10 @@ def parse_config(args, config_file='/etc/hikvision/aws/config.yaml'):
 
     return cfg
 
+def get_aws_session(cfg):
+
+    return boto3.Session(profile_name=cfg['aws']['profile'])
+
 def get_aws_client(cfg):
 
     session = boto3.Session(profile_name=cfg['aws']['profile'])
@@ -69,11 +73,17 @@ def process_s3_listing(rsp, as_folders=False):
         ret_objects.append(fs_object.strip("/"))
     return ret_objects
 
-# S3: list subfolder in S3 folder / bucket
+# S3: list subfolders in S3 folder / bucket
 def list_s3_subfolders(s3_client, bucket, pfx="", delimiter="/"):
 
     rsp = list_s3_objects(s3_client, bucket, pfx, delimiter)
     return process_s3_listing(rsp, as_folders=True)
+
+# S3: list subfolders in S3 folder / bucket filtered by pattern
+def list_s3_subfolders_filtered(s3_client, bucket, pfx="", delimiter="/", pattern="*"):
+
+    folders = list_s3_subfolders(s3_client, bucket, pfx=pfx, delimiter=delimiter)
+    return fnmatch.filter(folders, pattern)
 
 # S3: list only files in the particular folder on S3
 def list_s3_files(s3_client, bucket, pfx="", delimiter="/"):
@@ -177,3 +187,46 @@ def get_s3_object_modified_date(s3_resource, bucket, object):
 def get_s3_modification_date_folder(s3_resource, bucket, object):
 
     return get_s3_object_modified_date(s3_resource, bucket, object).strftime("%Y-%m-%d")
+
+# S3: set object tagging
+def set_s3_file_tagging(s3_client, bucket, object, tagging):
+
+    put_tags_response = s3_client.put_object_tagging(
+    Bucket=bucket,
+    Key=object,    
+    Tagging=tagging
+    )
+
+    return put_tags_response
+
+# S3: set archive tags on the object
+def set_s3_archive_tag(s3_client, bucket, object):
+
+    tagging = {
+        'TagSet': [
+            {
+                'Key': 'archived',
+                'Value': 'yes'
+            },
+        ]
+    }
+
+    return set_s3_file_tagging(s3_client, bucket, object, tagging)
+
+# S3: set object storage class
+def set_s3_object_storage_class(s3_client, bucket, object, storage_class):
+
+    logging.info("Changing storage class of object \"" + object + "\" to " + str(storage_class))
+
+    copy_source = {
+        'Bucket': bucket,
+        'Key': object
+    }
+
+    s3_client.copy(
+    copy_source, bucket, object,
+    ExtraArgs = {
+        'StorageClass': storage_class,
+        'MetadataDirective': 'COPY'
+    }
+    )

@@ -43,7 +43,8 @@ if __name__ == '__main__':
                       "-a",
                       "--action",
                       help = "Action the script has to perform",
-                      choices=['upload', 'cleanup', 'list', 'list-cameras', 'list-camera-dirs', 'list-camera-files', 'list-camera-files-on-date', 'store-camera-files', 'store-all-files' ],
+                      choices=['upload', 'cleanup', 'list', 'list-cameras', 'list-camera-dirs', 'list-camera-files', 'list-camera-files-on-date', 
+                      'store-camera-files', 'store-all-files', 'archive-camera-folder-on-date', 'archive-camera-folder-pattern' ],
                       required=True)
   parser.add_argument(
                       "-v",
