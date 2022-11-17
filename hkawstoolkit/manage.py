@@ -197,7 +197,8 @@ def a_archive_camera_date_folder(args, cfg, camera, date):
         util.set_s3_object_storage_class(s3_client, cfg['aws']['cctv_bucket'], arch_file, 'GLACIER')
 
     # Remove folder
-    util.delete_s3_file(s3_resource, cfg['aws']['cctv_bucket'], prefix_path + "/")
+    if util.file_s3_exists(s3_resource, cfg['aws']['cctv_bucket'], arch_file):
+        util.delete_s3_file(s3_resource, cfg['aws']['cctv_bucket'], prefix_path + "/")
 
     return
 
