@@ -11,3 +11,8 @@ archive:
         extension: tar.gz
         batch_folder_limit: 31
         glacier: True
+web:
+        port: 8000
+        dirs:
+                templates: web/templates
+                      

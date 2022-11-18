@@ -1,6 +1,6 @@
 
 from multiprocessing.spawn import import_main_path
-from hkawstoolkit import util
+from hkawstoolkit import util, web
 import logging
 import os
 
@@ -32,6 +32,8 @@ def action(args, cfg):
         a_archive_camera_pattern_folder(args, cfg, args.camera, args.pattern)
     elif args.action == 'archive-all-by-pattern':
         a_archive_pattern_folders_all_cameras(args, cfg, args.pattern)
+    elif args.action == 'web':
+        web.a_web(args, cfg)
     else:
         logging.warn("Unknown action provided: " + args.action)
     

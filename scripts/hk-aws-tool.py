@@ -44,7 +44,8 @@ if __name__ == '__main__':
                       "--action",
                       help = "Action the script has to perform",
                       choices=['upload', 'cleanup', 'list', 'list-cameras', 'list-camera-dirs', 'list-camera-files', 'list-camera-files-on-date', 
-                      'store-camera-files', 'store-all-files', 'archive-camera-folder-on-date', 'archive-camera-folder-pattern', 'archive-all-by-pattern' ],
+                      'store-camera-files', 'store-all-files', 'archive-camera-folder-on-date', 'archive-camera-folder-pattern', 'archive-all-by-pattern',
+                      'web' ],
                       required=True)
   parser.add_argument(
                       "-v",
@@ -86,7 +87,13 @@ if __name__ == '__main__':
                       "--pattern",
                       help="Filter files. Format example: *.jpg",
                       required=False,
-                      default="*")                   
+                      default="*")
+  parser.add_argument(
+                      "-w",
+                      "--wprefix",
+                      help="Prefix for WEB resource locations",
+                      required=False,
+                      default="/usr/share/hkawstoolkit")                                   
 
   args = parser.parse_args()
   
