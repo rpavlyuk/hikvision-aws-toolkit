@@ -15,4 +15,4 @@ web:
         port: 8000
         dirs:
                 templates: web/templates
-                      
+                root: web/ROOT
