@@ -107,6 +107,6 @@ def a_web(args, cfg):
 
     hk_cfg = cfg
     hk_args = args
-    hkawsweb.run(port=cfg['web']['port'], debug=args.verbose)
+    hkawsweb.run(host=cfg['web']['host'], port=cfg['web']['port'], debug=args.verbose)
 
     return

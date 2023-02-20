@@ -12,7 +12,8 @@ archive:
         batch_folder_limit: 31
         glacier: True
 web:
-        port: 8000
+        host: 0.0.0.0
+        port: 8181
         dirs:
                 templates: web/templates
                 root: web/ROOT
