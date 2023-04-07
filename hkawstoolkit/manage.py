@@ -10,6 +10,7 @@ import pprint
 
 def action(args, cfg):
 
+    # process actions
     if args.action == 'cleanup':
         cleanup_all(args, cfg)
     elif args.action == 'upload':

@@ -17,3 +17,8 @@ web:
         dirs:
                 templates: web/templates
                 root: web/ROOT
+        page_size:      50
+db:
+        cache: data/cache.json
+cache:
+        expire: 1800 # seconds

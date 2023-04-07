@@ -4,7 +4,14 @@ from setuptools import setup, Extension, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = [ 'boto3', 's3-tar', "pyyaml", "Pillow", 'flask' ]
+requirements = [ 
+    'boto3', 
+    's3-tar', 
+    'pyyaml', 
+    'Pillow', 
+    'flask', 
+    'pysondb-v2',
+    ]
 
 setup_requirements = [ ]
 
