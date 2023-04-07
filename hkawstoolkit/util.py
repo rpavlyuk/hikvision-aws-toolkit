@@ -47,7 +47,8 @@ def parse_config(args, config_file='/etc/hikvision/aws/config.yaml'):
 # CACHE functions
 #
 def get_cache_db(cfg):
-    return PysonDB(cfg['db']['cache'])
+    global hk_args
+    return PysonDB(hk_args.wprefix + "/" + cfg['db']['cache'])
 
 def new_cache_object():
 

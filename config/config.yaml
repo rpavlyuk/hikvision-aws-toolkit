@@ -19,6 +19,6 @@ web:
                 root: web/ROOT
         page_size:      50
 db:
-        cache: data/cache.json
+        cache: web/cache/cache.json
 cache:
         expire: 1800 # seconds
