@@ -268,10 +268,26 @@ def folder_s3_exists(s3_client, bucket, path):
     resp = s3_client.list_objects(Bucket=bucket, Prefix=path, Delimiter='/',MaxKeys=1)
     return 'CommonPrefixes' in resp
 
-# S3: check if file exists
-def file_s3_exists(s3_resource, bucket, file):
+# S3: Get object instance
+def get_s3_object_instance(s3_resource, bucket, file):
+    f_obj = None
     try:
-        s3_resource.Object(bucket, file).load()
+        f_obj = s3_resource.Object(bucket, file)
+    except:
+        logging.error("Unable to create object instance for file" + str(file))
+    return f_obj
+
+# S3: check if file exists
+def file_s3_exists(s3_resource, bucket, file, f_obj = None):
+
+    if not f_obj:
+        f_obj = get_s3_object_instance(s3_resource, bucket, file)
+        if not f_obj:
+            return False
+
+    try:
+        f_obj = s3_resource.Object(bucket, file)
+        f_obj.load()
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             # The object does not exist.

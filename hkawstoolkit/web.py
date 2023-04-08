@@ -97,13 +97,15 @@ def act_index():
             
             if util.folder_s3_exists(s3_client, util.hk_cfg['aws']['cctv_bucket'], l_obj):
                 s_list += "<span><a href=\"/?object=" + str(l_obj) + "\">" + os.path.basename(str(l_obj)) +"</a></span><br/>"
-
-            if util.file_s3_exists(s3_resource, util.hk_cfg['aws']['cctv_bucket'], l_obj):
-                f_obj = s3_resource.Object(util.hk_cfg['aws']['cctv_bucket'], l_obj)
-                if not f_obj.content_type == "image/jpeg":
-                    s_list += "<span><a href=\"/?object=" + l_obj + "\">" + os.path.basename(str(l_obj)) +"</a></span><br/>"
-                else:
-                    s_list += "<div class=\"cell-img\"><a href=\"/?object=" + l_obj + "&content=raw\"><img src=\"/?object=" + l_obj + "&content=raw&thumb=yes\" /></a></div>"
+                continue
+            
+            f_obj = util.get_s3_object_instance(s3_resource, util.hk_cfg['aws']['cctv_bucket'], l_obj)
+            if not f_obj:
+                continue
+            if not f_obj.content_type == "image/jpeg":
+                s_list += "<span><a href=\"/?object=" + l_obj + "\">" + os.path.basename(str(l_obj)) +"</a></span><br/>"
+            else:
+                s_list += "<div class=\"cell-img\"><a href=\"/?object=" + l_obj + "&content=raw\"><img src=\"/?object=" + l_obj + "&content=raw&thumb=yes\" alt=\"" + os.path.basename(str(l_obj)) + "\" title=\"" + os.path.basename(str(l_obj)) + "\" /></a></div>"
 
         if total_objs_in_folder > int(util.hk_cfg['web']['page_size']):
             logging.info("web: total objects in this folder is " + str(total_objs_in_folder) + " which is bigger than page size (" + str(util.hk_cfg['web']['page_size']) + "). Paginator will displayed.")
