@@ -18,6 +18,7 @@ web:
                 templates: web/templates
                 root: web/ROOT
         page_size:      50
+        sort: asc
 db:
         cache: web/cache/cache.json
 cache:

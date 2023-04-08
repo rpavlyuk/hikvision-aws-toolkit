@@ -43,7 +43,8 @@ def act_index():
         object = ""
     content = request.args.get('content', "list")
     thumb = request.args.get('thumb', "no")
-    nextToken = request.args.get('nextToken', None)
+    startPos = int(request.args.get('startPos', 0))
+    sortOrder = request.args.get('sortOrder', util.hk_cfg['web']['sort'])
 
     logging.info("Object: " + str(object) + ", content: " + str(content)+ ", thumb: " + str(thumb))
 
@@ -77,7 +78,19 @@ def act_index():
         s_list = "<span><a href=\"/?object=/\">[ ROOT ]</a></span><br/>"
         s_list += "<span><a href=\"/?object=" + os.path.dirname(object) + "\"> [ .. ]</a></span><br/>"
             
-        file_objects = util.list_s3_folder(s3_client, util.hk_cfg['aws']['cctv_bucket'], object, cached = True, session_id = session_id)
+        file_objects = util.list_s3_folder(s3_client, util.hk_cfg['aws']['cctv_bucket'], object, cached = True, session_id = session_id, startPos = startPos, sort_order=sortOrder)
+        
+        total_objs_in_folder = len(file_objects)
+        logging.info("web: total items in folders/files/info list received: " + str(total_objs_in_folder))
+        # check of the there's information about total objects in the folder (since we may have just one page returned here)
+        # and pop it from the list if it's there, correcting the value of 'total_objs_in_folder' varialbe
+        if len(file_objects) > 0:
+            if type(file_objects[-1]) is dict:
+                if 'total_objects' in file_objects[-1]:
+                    total_objs_in_folder = file_objects.pop()['total_objects']
+                    logging.info("web: found total_objects record in returned folder list. Adjusting totals to: " + str(total_objs_in_folder))
+
+        # Form the list of objects (folders and files) on WEB
         for l_obj in file_objects:
             if str(l_obj) == str(object):
                 continue
@@ -92,14 +105,37 @@ def act_index():
                 else:
                     s_list += "<div class=\"cell-img\"><a href=\"/?object=" + l_obj + "&content=raw\"><img src=\"/?object=" + l_obj + "&content=raw&thumb=yes\" /></a></div>"
 
+        if total_objs_in_folder > int(util.hk_cfg['web']['page_size']):
+            logging.info("web: total objects in this folder is " + str(total_objs_in_folder) + " which is bigger than page size (" + str(util.hk_cfg['web']['page_size']) + "). Paginator will displayed.")
+            pager = "<div> <strong>Navigate:</strong> "
+            if (startPos - int(util.hk_cfg['web']['page_size'])) > 0:
+                pager += "<span><a href=\"/?object=" + str(object) + "&startPos=" + str(startPos - int(util.hk_cfg['web']['page_size'])) + "\"> << Previous</a></span> |"
+            elif (startPos - int(util.hk_cfg['web']['page_size'])) <= 0 and (startPos - int(util.hk_cfg['web']['page_size'])) > (-1)*int(util.hk_cfg['web']['page_size']):
+                pager += "<span><a href=\"/?object=" + str(object) + "&startPos=0\"> << Previous</a></span> |"
+            
+            if (total_objs_in_folder - startPos) > int(util.hk_cfg['web']['page_size']):
+                pager += "| <span><a href=\"/?object=" + str(object) + "&startPos=" + str(startPos + int(util.hk_cfg['web']['page_size'])) + "\"> Next >> </a></span>"
+            
+            pager += "</div>"
+        else:
+            logging.info("web: total objects in this folder is " + str(total_objs_in_folder) + " which is lower than page size (" + str(util.hk_cfg['web']['page_size']) + "). No Paginator will be displayed.")
+            pager = ""
+
+        # Sorter
+        sorter = "<div><strong>Sort:</strong> <span><a href=\"/?object=" + str(object) + "&startPos=" + str(startPos) + "&sortOrder=asc\">^ Ascending </a></span>"
+        sorter += "| <span><a href=\"/?object=" + str(object) + "&startPos=" + str(startPos) + "&sortOrder=desc\">v Descending </a></span></div>"
 
         # Insert data in template
         # TODO: switch to render_template() from fask
         template = template.replace(b'{TITLE}', bytes(object,'UTF-8'))
-        template = template.replace(b'{PATH}', bytes(object,'UTF-8'))
+        template = template.replace(b'{PATH}', bytes(str(object) + "/",'UTF-8'))
         template = template.replace(b'{MEDIA_LIST}', bytes(s_list,'UTF-8'))
-        template = template.replace(b'{TOTAL_OBJECTS}', bytes(str(len(file_objects)-1),'UTF-8'))
-        template = template.replace(b'{PAGER}', bytes('','UTF-8'))
+        template = template.replace(b'{TOTAL_OBJECTS}', bytes(str(total_objs_in_folder),'UTF-8'))
+        template = template.replace(b'{PAGER}', bytes(pager,'UTF-8'))
+        template = template.replace(b'{SORTORDER}', bytes(sorter,'UTF-8'))
+        template = template.replace(b'{SHOWING_OBJECTS}', bytes(str(len(file_objects)),'UTF-8'))
+        template = template.replace(b'{SHOWING_FROM}', bytes(str(startPos+1),'UTF-8'))
+        template = template.replace(b'{SHOWING_TO}', bytes(str(startPos + int(util.hk_cfg['web']['page_size']) if startPos+int(util.hk_cfg['web']['page_size']) <= total_objs_in_folder else total_objs_in_folder),'UTF-8'))
 
         resp = make_response(template)
         resp.headers['Content-Type'] = "text/html"
