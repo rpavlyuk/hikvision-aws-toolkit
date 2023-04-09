@@ -1,0 +1,1 @@
+10 */1 * * * USERNAME /usr/bin/hk-aws-tool.py -c /etc/hkawstoolkit/config.yaml -a store-all-files -p "*.jpg"

@@ -11,7 +11,7 @@ RestartSec=60s
 StartLimitIntervalSec=60
 StartLimitBurst=2
 NotifyAccess=all
-User=rpavlyuk
+User=USERNAME
 WorkingDirectory=/usr/share/hkawstoolkit/web
 
 [Install]

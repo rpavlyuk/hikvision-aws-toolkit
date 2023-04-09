@@ -1,0 +1,1 @@
+0 */1 * * * USERNAME /usr/bin/s3fs-hk-watchdog.sh
