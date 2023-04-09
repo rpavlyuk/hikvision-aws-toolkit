@@ -42,25 +42,31 @@ The instruction below executed step by step shall guide shall make you run the s
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": "s3:GetBucketLocation",
             "Resource": "arn:aws:s3:::*"
         },
         {
-            "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": [
                 "s3:PutObject",
                 "s3:GetObject",
-                "s3:DeleteObject",
+                "s3:GetObjectTagging",
                 "s3:PutObjectTagging",
-                "s3:GetObjectTagging"
+                "s3:DeleteObject"
             ],
             "Resource": "arn:aws:s3:::my-video-surveillance/*"
         },
         {
-            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::my-video-surveillance"
+            ]
+        },
+        {
             "Effect": "Allow",
             "Action": "s3:ListAllMyBuckets",
             "Resource": "arn:aws:s3:::*"
