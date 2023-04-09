@@ -131,3 +131,4 @@ dmypy.json
 # App cache
 data/cache.json
 web/cache/cache.json
+.DS_Store
