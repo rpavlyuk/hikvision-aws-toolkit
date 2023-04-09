@@ -1,5 +1,5 @@
 # Hikvision AWS Toolkit
-A set of tools to manage captured files stored by Hikvision devices on FTP file shares: arrange them, upload them to AWS, rotate old files, etc. With this toolset you can enabled
+A set of tools to manage captured files stored by Hikvision devices on FTP file shares: arrange them, upload them to AWS, rotate old files, etc. This toolset is all you need to store the captured event images on AWS Cloud (S3) and successfully manage them.
 
 ## Background
 I own Hikvision video surveillance system (a dozen of IP cameras from different generations and the NVR) and I was looking on how to store in the cloud the screenshot images which are captured when the security event is triggered. For example, you can set up a *Line Crossing Detection* event detection either on camera or the NVR, and once it happens (means something/-body is crossing that virtual line) device is taking a couple screenshots which are then stored ether on local storage (e.g., SD Card or HDD) or remote (e.g., FTP, SMB or similar). Problem is that when you have an intrusion into your home or office, intruder can also steal or destroy the reconding device, either NVR and/or your home server, making the whole idea of recording pointless. Thus, I came to an idea that I have to store captured surveillance events data somewhere outside my home and office.
@@ -23,7 +23,7 @@ The concept is the following: IP cameras send media information (typically, scre
 In order to make your Hikvision (and probably other system like DAHUA) as least partially Cloud-enabled, you need:
 * Surveillance cameras itself. Actually, for our use case NVR is not even needed since in our case cameras will store captured images to FTP directly.
 * AWS Account. My monthly cost to run this tool varies from 10 to 40 USD depending how much data is being pushed and is historically stored.
-* Home / office server. Can be as simple as RaspberryPi-based box running any recent version of Linux.
+* Home / office server. Can be as simple as RaspberryPi-based box running any recent version of Linux. And of course, it must be behind the firewall and must be in the same local network as your cameras.
 
 The instruction below executed step by step shall guide shall make you run the solution.
 
@@ -83,5 +83,70 @@ The instruction below executed step by step shall guide shall make you run the s
   * Review if everything is correct and press *Add Permission*
 * Now you're done with setting up the AWS part.
 
+### Setup Linux server
+#### Part 1: FTP Server
+I'm using Fedora Linux so there might be commands specific to RedHat-based distros. However, I will not be using any RedHat-specific tools so running the setting up other distro like Ubuntu or Mint shall not be much different (if different at all).
+* Setup FTP server. I'm using vsftpd (https://security.appspot.com/vsftpd.html) because it is easy in setup and is quite secure (although FTP protocol is insecure by itself!)
+```
+# On Redhat systems
+sudo dnf install -y vsftpd
 
-To be continued...
+# On Debian systems
+sudo apt-get install vsftpd
+```
+* Enable PAM authentication for FTP server. Edit file */etc/vsftpd/vsftpd.conf* and ensure it has the following lines (typically at the bottom):
+```
+pam_service_name=vsftpd
+userlist_enable=YES
+```
+* Create directory where you will store the captured images from cameras and mount the S3 bucket:
+```
+# change /var/lib/cctv part to anyone you'd like
+sudo mkdir -p /var/lib/cctv/storage
+```
+* Create *cctv* user that will be used by cameras to login via FTP:
+```
+sudo adduser -d /var/lib/cctv -s /bin/false cctv
+```
+* And change its password:
+```
+sudo passwd cctv
+```
+* Make *cctv* owner if its home directory:
+```
+sudo chown -R cctv /var/lib/cctv
+```
+* (Re)start FTP server:
+```
+systemctl restart vsftpd
+```
+* Test login from another server or client to the newly started FTP server:
+```
+# EXAMPLE: Assuming 192.168.1.2 is the ip of the box where you just installed VSFTPD
+[rpavlyuk@gemini ~]$ ftp 192.168.1.2
+Connected to 192.168.1.2 (192.168.1.2).
+220 (vsFTPd 3.0.5)
+Name (192.168.1.2:rpavlyuk): cctv
+331 Please specify the password.
+Password:
+```
+#### Part 2: S3FS mount
+S3FS (https://github.com/s3fs-fuse/s3fs-fuse) is the software which allows you to mount S3 bucket into Linux folder and use like a filesystem.
+* Go to https://github.com/s3fs-fuse/s3fs-fuse and follow the installation procedure up to the point when it tells you to modify */etc/fstab* file. You will need ACCESSKEY and SECRET for the AWS user which we've created in the section above. If didn't save the SECRET... well.. you will need to get a new access key for the user again.
+* New, let's add the corresponding entry to */etc/fstab* file. This is the file which allows you to mount the filesystem on boot or login. Add this line at the end of the file:
+```
+# Remote S3 CCTV storage
+s3fs#my-video-surveillance /var/lib/cctv/storage fuse nonempty,_netdev,allow_other,use_cache=/var/tmp,ensure_diskfree=30720,max_stat_cache_size=250000,passwd_file=/etc/passwd-s3fs,url=https://s3.eu-central-1.amazonaws.com,umask=0000 0 0
+```
+**NOTE**: Replace 'eu-central-1' with the name of the region where your bucket is stored. You will find it in AWS S3 Console, where all buckets are listed.
+* Once the file is saved, it is time to test:
+  * Mount the folder:
+```
+mount /var/lib/cctv/storage
+```
+  * Put dummy file in the folder:
+```
+touch /var/lib/cctv/storage/test.file
+```
+  * Go to https://s3.console.aws.amazon.com/s3/buckets, open bucket *my-video-surveillance* and if file *test.file* appeared -- congrats, you have s3fs confgured!
+  
