@@ -18,8 +18,8 @@
 #
 
 NAME=s3fs
-BUCKET=pvl-video-surveillance
-MOUNTPATH=/media/VL1_MOVIES/security/storage
+BUCKET=S3BUCKET
+MOUNTPATH=S3FSMOUNTFOLDER
 MOUNT=/bin/mount
 UMOUNT=/bin/umount
 GREP=/bin/grep
