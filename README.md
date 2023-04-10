@@ -150,3 +150,49 @@ touch /var/lib/cctv/storage/test.file
 ```
   * Go to https://s3.console.aws.amazon.com/s3/buckets, open bucket *my-video-surveillance* and if file *test.file* appeared -- congrats, you have s3fs confgured!
   
+### Setup IP Cameras
+* Log into your camera through WEB interface and setup FTP server connection:
+![FTP Server configuration for Hikvision IP Camera](https://user-images.githubusercontent.com/3177468/230902583-e515bc44-8991-48a0-80a3-7b8401b2d524.png)
+
+  * *Parent Directory* is a subdirectory in the FTP root. I suggest you set it as *storage*, as we did it in the section above.
+  * *Child Directory* shall be equal to camera name. Camera name is being set as *Device Name* in *System Settings* section of camera configuration.
+
+* For the events you want to capture, enable saving screenshot images to the FTP:
+![Save event data to FTP](https://user-images.githubusercontent.com/3177468/230903793-98ff5421-3092-4a2b-a6e9-fdddbbc93cfa.png)
+
+* Configure the capture parameters, especially how many photos to take when event is triggered and with which interval:
+![Configure event capture](https://user-images.githubusercontent.com/3177468/230904461-24a80896-bab6-4f98-a6aa-3d2b4732ee01.png)
+
+* You can also adjust capture schedule, for example, if you do not want to capture events during night, day or weekend.
+
+**NOTE:** Settings interface may differ from model to model and from vendor to vendor.
+
+### Setup HK AWS Toolkit
+* Go back to your Linux server. Go to your home directory, checkout the source code from this repository and enter source directory:
+```
+cd && git clone https://github.com/rpavlyuk/hikvision-aws-toolkit.git && cd hikvision-aws-toolkit
+```
+* Install required system tools:
+```
+# RedHat systems 
+sudo dnf install -y python3 make perl-interpreter
+
+# Debian systems
+sudo apt-get install python3 make perl
+```
+* Install *s3fs* support tools (replace variable values with the yours if needed):
+```
+sudo make s3fs-tool S3BUCKET=my-video-surveillance S3FSMOUNTFOLDER=/var/lib/cctv/storage
+```
+* This actions installs two recommended tools to use:
+  * S3FS connection watchdog, which will try to restore s3fs mount point
+  * S3FS cache cleaner which will prevent the cache from use if too much space
+  Both tools are executed by CRON on regular basis on behalf of user *root* as they deal with filesystem mounts. Their source-code is available here in *s3fs* subfolder.
+* Install the core toolset:
+```
+sudo make install WEBSVCUSER=cctv
+```
+
+To be continued...
+
+  
