@@ -342,6 +342,13 @@ If you see bug, defect or your are just facing the challenge using this tool -- 
 
 Also, feel free to use GitHub's issue reporting tool to file anything you've found and anything that is bothering you.
 
+### TODO's
+* Re-factor the package so the main script `hk-aws-tool.py` becomes embedded into the Python package
+* Enable file purging / removal
+* Create RPM/DEB packages so the installation becomes a little more easier
+* Create AWS templates to configure the backet
+* Refactor and document the code better so it can be used as API
+
 
 
 
