@@ -34,6 +34,7 @@ install:
 
 	$(INSTALL) -m 644 systemd/hk-aws-web.service $(SYSTEMD_DIR)/
 	$(REGEX) 's/USERNAME/$(WEBSVCUSER)/gi' $(SYSTEMD_DIR)/hk-aws-web.service
+	$(SYSTEMCTL) daemon-reload
 
 	$(INSTALL) -m 644 cron.d/hk-aws-tool-collect $(CROND_DIR)
 	$(REGEX) 's/USERNAME/$(WEBSVCUSER)/gi' $(CROND_DIR)/hk-aws-tool-collect
