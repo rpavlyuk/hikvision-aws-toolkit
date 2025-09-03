@@ -22,12 +22,14 @@ PERL := $(shell which perl)
 REGEX = $(PERL) -pi -e
 SYSTEMCTL := $(shell which systemctl)
 
-install:
+
+package:
+	$(PYTHON3) setup.py install
+
+install: package
 	$(MKDIR) $(PREFIX)/bin
 	$(MKDIR) $(SYSCONFDIR)/hkawstoolkit
 	$(MKDIR) $(DATADIR)/hkawstoolkit
-
-	$(PYTHON3) setup.py install
 
 	$(INSTALL) -m 755 scripts/hk-aws-tool.py $(PREFIX)/bin
 	$(INSTALL) -m 644 config/config.yaml $(SYSCONFDIR)/hkawstoolkit
